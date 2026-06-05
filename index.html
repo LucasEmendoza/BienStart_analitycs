@@ -737,33 +737,56 @@ function normalizarHojas(hojas) {
 }
 
 async function cargarDesdeDrive() {
-  setEstadoCarga('⟳ Actualizando desde Drive...', 'loading');
+  setEstadoCarga('⧙ Actualizando desde Drive...', 'loading');
   try {
     const res = await fetch(API_URL);
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'Error desconocido');
 
-    // Toma el primer archivo disponible en Drive
     const archivos = json.data;
-    const nombreArchivo = Object.keys(archivos)[0];
-    const hojas = archivos[nombreArchivo];
+    const nombresArchivos = Object.keys(archivos);
+    if (nombresArchivos.length === 0)
+      throw new Error('No se encontraron archivos Google Sheets en la carpeta');
 
-    if (!hojas) throw new Error('No se encontraron archivos en la carpeta de Drive');
+    // Combina TODOS los archivos de la carpeta
+    const sesionesTodas  = [];
+    const empleadosTodos = [];
+    const riesgoTodos    = [];
+    const ausentTodos    = [];
+    const gamifTodos     = [];
 
-    // Normaliza los nombres de hoja — mapea cualquier nombre a los esperados
-    const hojasNormalizadas = normalizarHojas(hojas);
+    nombresArchivos.forEach(nombre => {
+      const hojas = normalizarHojas(archivos[nombre]);
+      sesionesTodas.push(...(hojas['SesionesBienStart'] || []));
+      empleadosTodos.push(...(hojas['Empleados']        || []));
+      riesgoTodos.push(   ...(hojas['RiesgoPredictivo'] || []));
+      ausentTodos.push(   ...(hojas['Ausentismo']        || []));
+      gamifTodos.push(    ...(hojas['Gamificacion']      || []));
+      console.log('Archivo:', nombre, '→', (hojas['SesionesBienStart']||[]).length, 'sesiones');
+    });
 
-    DATOS_ACTUALES = hojasNormalizadas;
-    procesarYActualizar(hojasNormalizadas, nombreArchivo);
+    console.log('TOTAL combinado:', sesionesTodas.length, 'sesiones de', nombresArchivos.length, 'archivo(s)');
+
+    const hojasCombinadas = {
+      SesionesBienStart: sesionesTodas,
+      Empleados:         empleadosTodos,
+      RiesgoPredictivo:  riesgoTodos,
+      Ausentismo:        ausentTodos,
+      Gamificacion:      gamifTodos
+    };
+
+    DATOS_ACTUALES = hojasCombinadas;
+    procesarYActualizar(hojasCombinadas, nombresArchivos.length + ' archivo(s)');
 
     const ahora = new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
-    setEstadoCarga(`✓ Datos en vivo · Drive · ${ahora}`, 'ok');
+    const total = sesionesTodas.length.toLocaleString('es-CO');
+    setEstadoCarga('✓ ' + nombresArchivos.length + ' archivo(s) · ' + total + ' sesiones · ' + ahora, 'ok');
     document.getElementById('topbar-meta').textContent =
-      `Datos en vivo desde Google Drive · Actualizado ${ahora}`;
+      nombresArchivos.length + ' archivo(s) en Drive · ' + total + ' sesiones totales · Actualizado ' + ahora;
 
   } catch (err) {
     console.error('Error cargando desde Drive:', err);
-    setEstadoCarga(`⚠ Sin conexión — usando datos de demo (${err.message})`, 'error');
+    setEstadoCarga('⚠ Sin conexión — usando datos de demo (' + err.message + ')', 'error');
     usarDatosDemo();
   }
 }
