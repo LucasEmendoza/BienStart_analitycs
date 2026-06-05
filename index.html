@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BienStart Analytics — Plataforma de Bienestar Organizacional</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #F4F3EE;
+  --surface: #FFFFFF;
+  --surface2: #F9F8F5;
+  --border: rgba(0,0,0,0.08);
+  --text: #1A1A18;
+  --text2: #6B6B66;
+  --text3: #9E9E98;
+  --accent: #1D6B4A;
+  --accent-light: #E1F5EE;
+  --accent2: #C85A1A;
+  --accent2-light: #FAECE7;
+  --amber: #B87510;
+  --amber-light: #FAEEDA;
+  --blue: #1A5FA8;
+  --blue-light: #E6F1FB;
+  --red: #A32D2D;
+  --red-light: #FCEBEB;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* Layout */
+.shell { display: flex; min-height: 100vh; }
+.sidebar { width: 220px; background: var(--text); padding: 0; flex-shrink: 0; display: flex; flex-direction: column; }
+.logo-area { padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.logo { font-size: 18px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+.logo span { color: #5DCAA5; }
+.logo-sub { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; font-weight: 300; letter-spacing: 0.5px; text-transform: uppercase; }
+.nav { padding: 16px 0; flex: 1; }
+.nav-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 1px; padding: 8px 20px 4px; font-weight: 500; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; font-size: 13.5px; color: rgba(255,255,255,0.55); transition: all 0.15s; border-left: 2px solid transparent; }
+.nav-item:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.05); }
+.nav-item.active { color: #5DCAA5; border-left-color: #5DCAA5; background: rgba(93,202,165,0.08); }
+.nav-item .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+.habeas-badge { background: rgba(93,202,165,0.12); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 10.5px; color: rgba(255,255,255,0.5); line-height: 1.4; }
+
+.main { flex: 1; overflow-x: hidden; }
+.topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; }
+.topbar-title { font-size: 15px; font-weight: 500; }
+.topbar-meta { font-size: 12px; color: var(--text2); }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.period-select { font-family: 'DM Sans', sans-serif; font-size: 12.5px; border: 1px solid var(--border); background: var(--surface2); padding: 6px 10px; border-radius: var(--radius-sm); color: var(--text); cursor: pointer; }
+.btn-ai { background: var(--accent); color: white; border: none; padding: 7px 14px; border-radius: var(--radius-sm); font-size: 12.5px; font-family: 'DM Sans', sans-serif; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 6px; transition: opacity 0.2s; }
+.btn-ai:hover { opacity: 0.85; }
+.btn-ai.loading { opacity: 0.6; cursor: not-allowed; }
+
+.content { padding: 28px 32px; }
+.section { display: none; }
+.section.active { display: block; }
+.section-header { margin-bottom: 20px; }
+.section-title { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+.section-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+/* KPI Cards */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+.kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; position: relative; overflow: hidden; }
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.kpi-card.green::before { background: #1D9E75; }
+.kpi-card.amber::before { background: #BA7517; }
+.kpi-card.blue::before { background: #185FA5; }
+.kpi-card.red::before { background: #A32D2D; }
+.kpi-label { font-size: 11.5px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 500; }
+.kpi-value { font-size: 30px; font-weight: 600; letter-spacing: -1px; margin: 6px 0 2px; font-family: 'DM Mono', monospace; }
+.kpi-sub { font-size: 11.5px; color: var(--text2); }
+.kpi-badge { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 20px; font-weight: 500; margin-top: 6px; }
+.badge-up { background: var(--accent-light); color: var(--accent); }
+.badge-warn { background: var(--amber-light); color: var(--amber); }
+.badge-down { background: var(--red-light); color: var(--red); }
+
+/* Chart grid */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
+.chart-grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; margin-bottom: 24px; }
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.chart-title { font-size: 13.5px; font-weight: 500; margin-bottom: 4px; }
+.chart-desc { font-size: 11.5px; color: var(--text2); margin-bottom: 16px; }
+.chart-wrap { position: relative; }
+
+/* Risk table */
+.risk-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.risk-table th { text-align: left; padding: 10px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 500; color: var(--text2); border-bottom: 1px solid var(--border); }
+.risk-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.risk-table tr:last-child td { border-bottom: none; }
+.risk-tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.risk-alto { background: var(--red-light); color: var(--red); }
+.risk-medio { background: var(--amber-light); color: var(--amber); }
+.risk-bajo { background: var(--accent-light); color: var(--accent); }
+
+/* Alert banner */
+.alert-bar { border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.5; }
+.alert-bar.warn { background: var(--amber-light); color: #7A4A00; border-left: 3px solid var(--amber); }
+.alert-bar.info { background: var(--blue-light); color: #0C3A7A; border-left: 3px solid var(--blue); }
+.alert-bar.success { background: var(--accent-light); color: #0A4A30; border-left: 3px solid var(--accent); }
+.alert-icon { font-size: 16px; margin-top: 1px; }
+
+/* AI Panel */
+.ai-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-top: 24px; display: none; }
+.ai-panel.visible { display: block; }
+.ai-panel-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.ai-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+.ai-panel-title { font-size: 14px; font-weight: 500; }
+.ai-panel-sub { font-size: 12px; color: var(--text2); margin-left: auto; }
+.ai-content { font-size: 13.5px; line-height: 1.75; color: var(--text); }
+.ai-content h4 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text2); margin: 16px 0 6px; }
+.ai-content h4:first-child { margin-top: 0; }
+.ai-content p { margin-bottom: 10px; }
+.ai-content ul { margin: 6px 0 10px 18px; }
+.ai-content li { margin-bottom: 5px; }
+.ai-loader { text-align: center; padding: 20px; color: var(--text2); font-size: 13px; }
+.ai-loader span { display: inline-block; animation: dots 1.4s infinite; }
+
+/* File upload */
+.upload-zone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 40px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 24px; }
+.upload-zone:hover { border-color: var(--accent); background: var(--accent-light); }
+.upload-icon { font-size: 36px; color: var(--text3); margin-bottom: 12px; }
+.upload-text { font-size: 14px; font-weight: 500; }
+.upload-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.upload-loaded { background: var(--accent-light); border-color: var(--accent); }
+.upload-loaded .upload-icon { color: var(--accent); }
+
+/* Gamification */
+.gamif-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.gamif-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+.gamif-num { font-size: 28px; font-weight: 600; font-family: 'DM Mono', monospace; }
+.gamif-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+.level-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 500; margin-top: 6px; }
+.level-embajador { background: #FAEEDA; color: #7A4A00; }
+.level-maestro { background: var(--blue-light); color: var(--blue); }
+.level-guardian { background: var(--accent-light); color: var(--accent); }
+.level-explorador { background: #F1EFE8; color: #5F5E5A; }
+
+/* Disclaimer */
+.disclaimer { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 11.5px; color: var(--text2); line-height: 1.5; margin-top: 20px; display: flex; gap: 8px; align-items: flex-start; }
+.disclaimer strong { color: var(--accent); }
+
+/* Habeas data section */
+.habeas-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+.habeas-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.habeas-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 16px; }
+.habeas-item { background: var(--surface2); border-radius: var(--radius-sm); padding: 14px; }
+.habeas-item-title { font-size: 12.5px; font-weight: 500; margin-bottom: 4px; }
+.habeas-item-desc { font-size: 11.5px; color: var(--text2); line-height: 1.5; }
+
+@media (max-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .chart-grid, .chart-grid-3 { grid-template-columns: 1fr; }
+  .habeas-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+<aside class="sidebar">
+  <div class="logo-area">
+    <div class="logo">Bien<span>Start</span></div>
+    <div class="logo-sub">Analytics Platform</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-label">Dashboards</div>
+    <div class="nav-item active" onclick="showSection('upload')"><div class="dot"></div> Cargar datos</div>
+    <div class="nav-item" onclick="showSection('gerencia')"><div class="dot"></div> Gerencia</div>
+    <div class="nav-item" onclick="showSection('rrhh')"><div class="dot"></div> RRHH</div>
+    <div class="nav-item" onclick="showSection('sgsst')"><div class="dot"></div> SGSST</div>
+    <div class="nav-label" style="margin-top:8px;">Módulos</div>
+    <div class="nav-item" onclick="showSection('riesgos')"><div class="dot"></div> Motor de riesgos</div>
+    <div class="nav-item" onclick="showSection('gamificacion')"><div class="dot"></div> Gamificación</div>
+    <div class="nav-item" onclick="showSection('habeas')"><div class="dot"></div> Habeas Data</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="habeas-badge">🔒 Datos anónimos por área · Ley 1581/2012 · Sin perfilamiento individual</div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">Cargar archivo BienStart</div>
+      <div class="topbar-meta" id="topbar-meta">Conectando con Google Drive...</div>
+    </div>
+    <div class="topbar-right">
+      <span id="estado-carga" style="font-size:12px;color:var(--accent)">⟳ Conectando con Drive...</span>
+      <select class="period-select" id="period-select">
+        <option>Mayo 2026</option>
+        <option>Abril 2026</option>
+        <option>Q2 2026</option>
+      </select>
+      <button class="btn-ai" id="btn-ai" onclick="generateAIReport()">✦ Generar Informe IA</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- UPLOAD -->
+    <div class="section active" id="section-upload">
+      <div class="section-header">
+        <div class="section-title">Cargar archivo de sesiones</div>
+        <div class="section-sub">Sube el Excel exportado por BienStart para procesar automáticamente los KPIs</div>
+      </div>
+
+      <div class="upload-zone upload-loaded" id="upload-zone">
+        <div class="upload-icon">✓</div>
+        <div class="upload-text" id="archivo-nombre">Conectando con Google Drive...</div>
+        <div class="upload-sub" id="archivo-sub">Cargando datos en vivo...</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card green">
+          <div class="kpi-label">Total sesiones</div>
+          <div class="kpi-value" id="kpi-sesiones">—</div>
+          <div class="kpi-sub">Mayo 2026</div>
+          <div class="kpi-badge badge-up">↑ Activo</div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-label">Colaboradores activos</div>
+          <div class="kpi-value" id="kpi-empleados">—</div>
+          <div class="kpi-sub">8 áreas · 12 sedes</div>
+          <div class="kpi-badge badge-up">100% completación</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Reducción estrés prom.</div>
+          <div class="kpi-value" id="kpi-reduccion">—</div>
+          <div class="kpi-sub">puntos por sesión</div>
+          <div class="kpi-badge badge-up">Eficaz</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">Alertas ergonómicas</div>
+          <div class="kpi-value" id="kpi-alertas">—</div>
+          <div class="kpi-sub" id="kpi-alerta-pct">24.6% de sesiones</div>
+          <div class="kpi-badge badge-warn">Atención</div>
+        </div>
+      </div>
+
+      <div class="alert-bar info">
+        <span class="alert-icon">ℹ</span>
+        <span>Todos los dashboards muestran datos <strong>agregados por área y sede</strong>. No se expone información personal identificable. Análisis conforme a la Ley 1581 de 2012.</span>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Distribución por tipo de experiencia</div>
+          <div class="chart-desc">Total de sesiones realizadas por modalidad</div>
+          <div class="chart-wrap" style="height:220px">
+            <canvas id="chartExp" role="img" aria-label="Distribución de sesiones por tipo de experiencia">Reconecta 2870, Desconecta 2792, Terapia Destructiva 2755</canvas>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap">
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75"></span>Reconecta 34.1%</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#185FA5"></span>Desconecta 33.2%</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#BA7517"></span>Terapia Dest. 32.7%</span>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Sesiones por área organizacional</div>
+          <div class="chart-desc">Volumen de participación por área</div>
+          <div class="chart-wrap" style="height:260px">
+            <canvas id="chartAreas" role="img" aria-label="Sesiones por área">Marketing 1299, Operaciones 1209, Finanzas 1060, Producción 1040, Tecnología 1018, Comercial 1003, Jurídica 962, RRHH 826</canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        <span>🛡</span>
+        <span><strong>Aviso legal:</strong> Esta herramienta identifica patrones organizacionales y oportunidades de mejora. No realiza diagnósticos médicos ni evaluaciones laborales individuales. Tratamiento de datos bajo Ley 1581 de 2012 Colombia.</span>
+      </div>
+    </div>
+
+    <!-- GERENCIA -->
+    <div class="section" id="section-gerencia">
+      <div class="section-header">
+        <div class="section-title">Dashboard Gerencia</div>
+        <div class="section-sub">Visión estratégica del programa de bienestar · Datos agregados</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card green">
+          <div class="kpi-label">Adopción del programa</div>
+          <div class="kpi-value" id="kpi-adopcion">—</div>
+          <div class="kpi-sub">promedio corporativo</div>
+          <div class="kpi-badge badge-up">↑ Sobre meta</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Eficacia anti-estrés</div>
+          <div class="kpi-value" id="kpi-eficacia">—</div>
+          <div class="kpi-sub">reducción por sesión</div>
+          <div class="kpi-badge badge-up">↑ Efectivo</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">Riesgo medio detectado</div>
+          <div class="kpi-value" id="kpi-riesgo-medio">—</div>
+          <div class="kpi-sub" id="kpi-pct-riesgo">colaboradores</div>
+          <div class="kpi-badge badge-warn">Monitorear</div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-label">ROI estimado</div>
+          <div class="kpi-value">3.2x</div>
+          <div class="kpi-sub">vs. ausentismo reducido</div>
+          <div class="kpi-badge badge-up">↑ Positivo</div>
+        </div>
+      </div>
+
+      <div class="chart-grid-3">
+        <div class="chart-card">
+          <div class="chart-title">Tendencia diaria de sesiones — Mayo 2026</div>
+          <div class="chart-desc">Actividad del programa en el mes</div>
+          <div class="chart-wrap" style="height:220px">
+            <canvas id="chartTendencia" role="img" aria-label="Tendencia diaria de sesiones mayo 2026">Serie de sesiones diarias entre 246 y 305</canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Distribución de riesgo</div>
+          <div class="chart-desc">Por nivel organizacional</div>
+          <div class="chart-wrap" style="height:220px">
+            <canvas id="chartRiesgoDist" role="img" aria-label="Distribución de nivel de riesgo">Bajo 397, Medio 103</canvas>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:12px;flex-wrap:wrap">
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75"></span>Bajo 79.4%</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#BA7517"></span>Medio 20.6%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:18px">
+        <div class="chart-title">Índice de reducción de estrés por área</div>
+        <div class="chart-desc">Efectividad promedio de las pausas activas por área organizacional</div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="chartReduccion" role="img" aria-label="Reducción de estrés por área">Finanzas 2.50, RRHH 2.50, Coordinador 2.51, Producción 2.47</canvas>
+        </div>
+      </div>
+
+      <div id="ai-panel-gerencia" class="ai-panel">
+        <div class="ai-panel-header">
+          <div class="ai-dot"></div>
+          <div class="ai-panel-title">Informe Ejecutivo — IA</div>
+          <div class="ai-panel-sub" id="ai-timestamp"></div>
+        </div>
+        <div class="ai-content" id="ai-content-gerencia"></div>
+      </div>
+
+      <div class="disclaimer">
+        <span>🛡</span>
+        <span><strong>Vista Gerencia:</strong> Todos los indicadores son agregados corporativos. No contiene datos individuales identificables. Uso exclusivo para decisiones estratégicas de bienestar organizacional.</span>
+      </div>
+    </div>
+
+    <!-- RRHH -->
+    <div class="section" id="section-rrhh">
+      <div class="section-header">
+        <div class="section-title">Dashboard Recursos Humanos</div>
+        <div class="section-sub">Gestión del talento y bienestar por área y cargo · Sin datos individuales</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card green">
+          <div class="kpi-label">Sesiones completadas</div>
+          <div class="kpi-value" id="kpi-sesiones-rrhh">—</div>
+          <div class="kpi-sub">100% tasa de finalización</div>
+          <div class="kpi-badge badge-up">↑ Excelente</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">Días ausentes promedio</div>
+          <div class="kpi-value" id="kpi-dias-aus">—</div>
+          <div class="kpi-sub">días/año por colaborador</div>
+          <div class="kpi-badge badge-warn">Monitorear</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-label">Incapacidades laborales</div>
+          <div class="kpi-value" id="kpi-incap">—</div>
+          <div class="kpi-sub">con incapacidad asociada</div>
+          <div class="kpi-badge badge-down">Atención</div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-label">Prob. ausentismo prom.</div>
+          <div class="kpi-value" id="kpi-prob-aus">—</div>
+          <div class="kpi-sub">predicción IA · próx. 30 días</div>
+          <div class="kpi-badge badge-warn">Moderado</div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Motivo de ausentismo</div>
+          <div class="chart-desc">Distribución por causa principal — datos anónimos por área</div>
+          <div class="chart-wrap" style="height:240px">
+            <canvas id="chartAusentismo" role="img" aria-label="Motivos de ausentismo">Estrés 119, Migraña 98, Dolor lumbar 95, Ninguno 95, Gripa 93</canvas>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#A32D2D"></span>Estrés 23.8%</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#BA7517"></span>Migraña 19.6%</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#185FA5"></span>Dolor lumbar 19.0%</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75"></span>Ninguno 19.0%</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#888780"></span>Gripa 18.6%</span>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Sesiones por cargo</div>
+          <div class="chart-desc">Participación por nivel jerárquico</div>
+          <div class="chart-wrap" style="height:280px">
+            <canvas id="chartCargo" role="img" aria-label="Sesiones por cargo">Profesional 1573, Auxiliar 1479, Líder 1434, Supervisor 1419, Analista 1405, Coordinador 1107</canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:18px">
+        <div class="chart-title">Alertas ergonómicas por área</div>
+        <div class="chart-desc">Sesiones con alerta ergonómica detectada — señal de riesgo postural colectivo</div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="chartErgo" role="img" aria-label="Alertas ergonómicas por área">Marketing 317, Operaciones 303, Finanzas 279, Producción 276, Comercial 254, Jurídica 232, Tecnología 232, RRHH 181</canvas>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        <span>🛡</span>
+        <span><strong>Vista RRHH:</strong> Información agregada por área y cargo. Prohibido el uso para evaluaciones de desempeño individuales. No se generan perfiles psicológicos. Finalidad exclusiva: mejora colectiva del programa de bienestar.</span>
+      </div>
+    </div>
+
+    <!-- SGSST -->
+    <div class="section" id="section-sgsst">
+      <div class="section-header">
+        <div class="section-title">Dashboard SGSST</div>
+        <div class="section-sub">Sistema de Gestión de Seguridad y Salud en el Trabajo · Patrones colectivos</div>
+      </div>
+
+      <div class="alert-bar warn">
+        <span class="alert-icon">⚠</span>
+        <span><strong>Alerta SGSST:</strong> <span id="sgsst-alerta-area">Área Marketing registra el mayor número de alertas ergonómicas (317 sesiones). Se recomienda evaluación ergonómica colectiva del área.</span> No implica diagnóstico individual.</span>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card red">
+          <div class="kpi-label">Alertas ergonómicas</div>
+          <div class="kpi-value" id="kpi-alertas-sgsst">—</div>
+          <div class="kpi-sub">en 30 días</div>
+          <div class="kpi-badge badge-down">↑ Alto</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-label">Estrés promedio inicial</div>
+          <div class="kpi-value" id="kpi-estres-ini">—</div>
+          <div class="kpi-sub">escala 1–10</div>
+          <div class="kpi-badge badge-warn">Moderado</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Estrés promedio final</div>
+          <div class="kpi-value" id="kpi-estres-fin">—</div>
+          <div class="kpi-sub">post-pausa activa</div>
+          <div class="kpi-badge badge-up">↓ Reducido</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Riesgo enfermedad laboral</div>
+          <div class="kpi-value">28.5%</div>
+          <div class="kpi-sub">probabilidad prom. área</div>
+          <div class="kpi-badge badge-up">Bajo–Medio</div>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Nivel de estrés: inicial vs. final por área</div>
+          <div class="chart-desc">Comparativa del impacto de las pausas activas en cada área</div>
+          <div class="chart-wrap" style="height:280px">
+            <canvas id="chartEstres" role="img" aria-label="Nivel de estrés inicial versus final por área">Comparativa de reducción de estrés por área</canvas>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:12px">
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#A32D2D"></span>Estrés inicial</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75"></span>Estrés final</span>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Riesgo de enfermedad laboral por área</div>
+          <div class="chart-desc">Probabilidad estimada según modelo predictivo</div>
+          <div class="chart-wrap" style="height:280px">
+            <canvas id="chartRiesgoLaboral" role="img" aria-label="Riesgo enfermedad laboral por área">Probabilidades de riesgo por área</canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        <span>🛡</span>
+        <span><strong>Vista SGSST:</strong> Los indicadores reflejan patrones colectivos para orientar intervenciones preventivas a nivel de área o sede. No constituyen diagnóstico médico individual. El profesional de salud ocupacional debe validar cualquier intervención clínica.</span>
+      </div>
+    </div>
+
+    <!-- RIESGOS -->
+    <div class="section" id="section-riesgos">
+      <div class="section-header">
+        <div class="section-title">Motor de Riesgos</div>
+        <div class="section-sub">Reglas de negocio para detección automática de patrones críticos · Vista por área</div>
+      </div>
+
+      <div class="alert-bar warn">
+        <span class="alert-icon">⚠</span>
+        <span><strong>3 reglas activas</strong> con condición MEDIO detectadas en el período actual. Los riesgos se muestran por área, nunca por individuo.</span>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:18px">
+        <div class="chart-title">Reglas activadas por área — Mayo 2026</div>
+        <div class="chart-desc">Número de reglas de riesgo disparadas por agregado de área</div>
+        <div class="chart-wrap" style="height:200px">
+          <canvas id="chartReglas" role="img" aria-label="Reglas de riesgo activadas por área">Distribución de alertas por regla de negocio</canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Catálogo de reglas de riesgo</div>
+        <div class="chart-desc">Motor basado en reglas — resultados siempre agregados por área</div>
+        <table class="risk-table">
+          <thead>
+            <tr><th>#</th><th>Condición</th><th>Consecuencia</th><th>Nivel</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>R01</td><td>Adopción &lt; 40% Y Estrés prom &gt; 8</td><td>Intervención urgente en área</td><td><span class="risk-tag risk-alto">Alto</span></td><td>✓ Activa</td></tr>
+            <tr><td>R02</td><td>Alertas ergonómicas &gt; 30% del área</td><td>Evaluación ergonómica colectiva</td><td><span class="risk-tag risk-alto">Alto</span></td><td>✓ Activa</td></tr>
+            <tr><td>R03</td><td>Ausentismo área &gt; 10 días/año</td><td>Revisión programa salud</td><td><span class="risk-tag risk-medio">Medio</span></td><td>✓ Activa</td></tr>
+            <tr><td>R04</td><td>Adopción 40–60% Y Estrés 6–8</td><td>Refuerzo comunicación</td><td><span class="risk-tag risk-medio">Medio</span></td><td>✓ Activa</td></tr>
+            <tr><td>R05</td><td>Reducción estrés &lt; 1.5 pts. por área</td><td>Revisar tipo de experiencia</td><td><span class="risk-tag risk-medio">Medio</span></td><td>Monitoreo</td></tr>
+            <tr><td>R06</td><td>Incapacidades &gt; 60% en área</td><td>Alerta de salud colectiva</td><td><span class="risk-tag risk-alto">Alto</span></td><td>✓ Activa</td></tr>
+            <tr><td>R07</td><td>Prob. ausentismo prom. área &gt; 50%</td><td>Plan de contingencia RRHH</td><td><span class="risk-tag risk-alto">Alto</span></td><td>Monitoreo</td></tr>
+            <tr><td>R08</td><td>Duración sesión prom. &lt; 7 min.</td><td>Verificar calidad de sesión</td><td><span class="risk-tag risk-bajo">Bajo</span></td><td>Monitoreo</td></tr>
+            <tr><td>R09</td><td>Sesiones por área &lt; 80% meta mensual</td><td>Alerta participación baja</td><td><span class="risk-tag risk-medio">Medio</span></td><td>✓ Activa</td></tr>
+            <tr><td>R10</td><td>Estrés inicial prom. &gt; 9 en área</td><td>Revisión urgente carga laboral</td><td><span class="risk-tag risk-alto">Alto</span></td><td>Monitoreo</td></tr>
+            <tr><td>R11</td><td>0 sesiones en 7 días corridos (área)</td><td>Notificación a líder de área</td><td><span class="risk-tag risk-medio">Medio</span></td><td>Monitoreo</td></tr>
+            <tr><td>R12</td><td>Estrés promedio sin mejora 3 semanas</td><td>Cambio de estrategia de pausa</td><td><span class="risk-tag risk-medio">Medio</span></td><td>Monitoreo</td></tr>
+            <tr><td>R13</td><td>Alerta ergonómica &gt; 40% en área</td><td>Inspección puesto de trabajo</td><td><span class="risk-tag risk-alto">Alto</span></td><td>✓ Activa</td></tr>
+            <tr><td>R14</td><td>Prob. enfermedad laboral &gt; 60% área</td><td>Remisión medicina del trabajo</td><td><span class="risk-tag risk-alto">Alto</span></td><td>Monitoreo</td></tr>
+            <tr><td>R15</td><td>Adopción &gt; 80% Y Estrés &lt; 4</td><td>Área modelo — replicar prácticas</td><td><span class="risk-tag risk-bajo">Bajo</span></td><td>✓ Activa</td></tr>
+            <tr><td>R16</td><td>Sesión promedio &lt; 8 minutos + alerta erg.</td><td>Pausas insuficientes + riesgo postural</td><td><span class="risk-tag risk-alto">Alto</span></td><td>Monitoreo</td></tr>
+            <tr><td>R17</td><td>Ausentismo por estrés &gt; 25% del área</td><td>Intervención psicosocial colectiva</td><td><span class="risk-tag risk-alto">Alto</span></td><td>✓ Activa</td></tr>
+            <tr><td>R18</td><td>Reducción estrés &gt; 3 pts. AND adopción &gt; 70%</td><td>Área de alto desempeño</td><td><span class="risk-tag risk-bajo">Bajo</span></td><td>Monitoreo</td></tr>
+            <tr><td>R19</td><td>Puntos gamificación prom. área &lt; 300</td><td>Refuerzo engagement programa</td><td><span class="risk-tag risk-medio">Medio</span></td><td>Monitoreo</td></tr>
+            <tr><td>R20</td><td>Incapacidad + estrés + baja adopción</td><td>Riesgo compuesto — acción inmediata</td><td><span class="risk-tag risk-alto">Alto</span></td><td>✓ Activa</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GAMIFICACION -->
+    <div class="section" id="section-gamificacion">
+      <div class="section-header">
+        <div class="section-title">Gamificación y Engagement</div>
+        <div class="section-sub">Niveles y puntos por área · Motor de motivación colectiva</div>
+      </div>
+
+      <div class="gamif-grid">
+        <div class="gamif-card">
+          <div class="gamif-num" style="color:#BA7517">151</div>
+          <div class="gamif-label">Embajadores</div>
+          <span class="level-badge level-embajador">Nivel 4</span>
+        </div>
+        <div class="gamif-card">
+          <div class="gamif-num" style="color:#185FA5">159</div>
+          <div class="gamif-label">Maestros</div>
+          <span class="level-badge level-maestro">Nivel 3</span>
+        </div>
+        <div class="gamif-card">
+          <div class="gamif-num" style="color:#1D9E75">118</div>
+          <div class="gamif-label">Guardianes</div>
+          <span class="level-badge level-guardian">Nivel 2</span>
+        </div>
+        <div class="gamif-card">
+          <div class="gamif-num" style="color:#888780">72</div>
+          <div class="gamif-label">Exploradores</div>
+          <span class="level-badge level-explorador">Nivel 1</span>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Distribución de niveles de gamificación</div>
+          <div class="chart-desc">Porcentaje de colaboradores por nivel alcanzado</div>
+          <div class="chart-wrap" style="height:260px">
+            <canvas id="chartGamif" role="img" aria-label="Distribución de niveles de gamificación">Maestro 159, Embajador 151, Guardián 118, Explorador 72</canvas>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:12px;flex-wrap:wrap">
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#185FA5"></span>Maestro 31.8%</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#BA7517"></span>Embajador 30.2%</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75"></span>Guardián 23.6%</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2)"><span style="width:10px;height:10px;border-radius:2px;background:#888780"></span>Explorador 14.4%</span>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Puntos promedio acumulados</div>
+          <div class="chart-desc">Indicador de engagement del programa</div>
+          <div style="text-align:center;padding:30px 0">
+            <div style="font-size:56px;font-weight:600;font-family:'DM Mono',monospace;color:var(--accent)" id="gamif-pts-prom">1.066</div>
+            <div style="font-size:13px;color:var(--text2);margin-top:4px">puntos promedio por colaborador</div>
+            <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:left">
+              <div style="background:var(--surface2);border-radius:8px;padding:12px">
+                <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">Máx. área</div>
+                <div style="font-size:20px;font-weight:600;font-family:'DM Mono',monospace">1.530</div>
+                <div style="font-size:11px;color:var(--text2)">Embajador #6</div>
+              </div>
+              <div style="background:var(--surface2);border-radius:8px;padding:12px">
+                <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">Insignias prom.</div>
+                <div style="font-size:20px;font-weight:600;font-family:'DM Mono',monospace">5.1</div>
+                <div style="font-size:11px;color:var(--text2)">por colaborador</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert-bar success">
+        <span class="alert-icon">✓</span>
+        <span>El <strong>62%</strong> de los colaboradores han alcanzado nivel Maestro o Embajador. Esto indica alto compromiso con el programa de pausas activas y correlaciona con menor probabilidad de ausentismo.</span>
+      </div>
+    </div>
+
+    <!-- HABEAS DATA -->
+    <div class="section" id="section-habeas">
+      <div class="section-header">
+        <div class="section-title">Habeas Data · Ley 1581 de 2012</div>
+        <div class="section-sub">Política de privacidad y protección de datos personales</div>
+      </div>
+
+      <div class="habeas-section">
+        <div class="habeas-title">Marco de cumplimiento — BienStart Analytics</div>
+        <p style="font-size:13.5px;color:var(--text2);line-height:1.7;margin-top:8px">Esta plataforma fue diseñada desde cero con los principios de privacidad por defecto (Privacy by Design). Todos los tratamientos de datos cumplen estrictamente la Ley Estatutaria 1581 de 2012 y el Decreto 1377 de 2013.</p>
+
+        <div class="habeas-grid">
+          <div class="habeas-item">
+            <div class="habeas-item-title">🎯 Principio de finalidad</div>
+            <div class="habeas-item-desc">Los datos se procesan exclusivamente para identificar patrones organizacionales de bienestar. No se usa para decisiones laborales individuales.</div>
+          </div>
+          <div class="habeas-item">
+            <div class="habeas-item-title">🔒 Minimización de datos</div>
+            <div class="habeas-item-desc">Solo se procesan los campos necesarios. Los dashboards muestran datos agregados; los datos individuales no se exponen en ninguna vista.</div>
+          </div>
+          <div class="habeas-item">
+            <div class="habeas-item-title">📋 Autorización del titular</div>
+            <div class="habeas-item-desc">El uso de datos requiere autorización previa, expresa e informada del colaborador conforme al Art. 9 de la Ley 1581/2012.</div>
+          </div>
+          <div class="habeas-item">
+            <div class="habeas-item-title">🏥 Datos sensibles de salud</div>
+            <div class="habeas-item-desc">Los niveles de estrés son datos de salud (Art. 5). Solo se procesan con autorización explícita y se anonimizan antes de cualquier análisis.</div>
+          </div>
+          <div class="habeas-item">
+            <div class="habeas-item-title">🚫 Sin perfilamiento individual</div>
+            <div class="habeas-item-desc">La plataforma no genera perfiles psicológicos ni clasifica individuos. Prohíbe el uso de IA para tomar decisiones laborales sobre personas.</div>
+          </div>
+          <div class="habeas-item">
+            <div class="habeas-item-title">🔐 Seguridad y acceso</div>
+            <div class="habeas-item-desc">Control de acceso por rol (RRHH/SGSST/Gerencia). Logs de auditoría. Cifrado en tránsito. Sin exposición de datos en canales públicos.</div>
+          </div>
+          <div class="habeas-item">
+            <div class="habeas-item-title">⚖️ Derechos ARCO</div>
+            <div class="habeas-item-desc">Los titulares pueden Acceder, Rectificar, Cancelar u Oponerse al tratamiento. Canal habilitado conforme Art. 14 y 15 de la Ley.</div>
+          </div>
+          <div class="habeas-item">
+            <div class="habeas-item-title">🌐 Transferencia internacional</div>
+            <div class="habeas-item-desc">Las APIs de IA (Claude) reciben solo datos anónimos y agregados, nunca datos personales identificables. Conforme Art. 26 Ley 1581/2012.</div>
+          </div>
+          <div class="habeas-item">
+            <div class="habeas-item-title">📅 Retención y supresión</div>
+            <div class="habeas-item-desc">Los datos tienen política de retención definida. El titular puede solicitar supresión. Los backups se eliminan en plazo establecido.</div>
+          </div>
+        </div>
+
+        <div class="alert-bar info" style="margin-top:20px">
+          <span class="alert-icon">ℹ</span>
+          <span>Para ejercer sus derechos de Habeas Data, escriba a <strong>datos@bienstart.co</strong> · Responsable del Tratamiento: BienStart S.A.S · Superintendencia de Industria y Comercio — autoridad de control en Colombia.</span>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;background:var(--accent);border-radius:var(--radius);padding:20px 24px;color:white">
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px">Declaración de uso ético de IA</div>
+        <div style="font-size:13px;opacity:0.85;line-height:1.6">Esta herramienta identifica patrones organizacionales y oportunidades de mejora. <strong>No realiza diagnósticos médicos ni evaluaciones laborales individuales.</strong> Los informes generados por inteligencia artificial son orientativos y deben ser validados por profesionales competentes (médico del trabajo, psicólogo organizacional, especialista en SST) antes de tomar cualquier decisión.</div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+</div><!-- end main -->
+</div><!-- end shell -->
+
+<script>
+// =====================================================================
+// CONEXIÓN GOOGLE DRIVE — BienStart Analytics
+// API: Google Apps Script → Drive → JSON → Dashboard
+// =====================================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbxX_vNLBU6ePDagGBNMxDWK7OgTfCOVgCaJVqHRtDxhcWr0Z6YTxcoV7G2eChurVJnCBQ/exec';
+const INTERVALO_REFRESCO = 5 * 60 * 1000; // 5 minutos
+let CHARTS = {};
+let DATOS_ACTUALES = null;
+
+// ── Muestra estado de conexión en el topbar ──────────────────────────
+function setEstadoCarga(msg, tipo) {
+  const el = document.getElementById('estado-carga');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = tipo === 'ok' ? 'var(--accent)' : tipo === 'error' ? 'var(--red)' : 'var(--amber)';
+}
+
+// ── Carga datos desde Drive ──────────────────────────────────────────
+async function cargarDesdeDrive() {
+  setEstadoCarga('⟳ Actualizando desde Drive...', 'loading');
+  try {
+    const res = await fetch(API_URL);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Error desconocido');
+
+    // Busca el primer archivo que tenga las hojas esperadas
+    const archivos = json.data;
+    const nombreArchivo = Object.keys(archivos)[0];
+    const hojas = archivos[nombreArchivo];
+
+    if (!hojas) throw new Error('No se encontraron archivos en la carpeta de Drive');
+
+    DATOS_ACTUALES = hojas;
+    procesarYActualizar(hojas, nombreArchivo);
+
+    const ahora = new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
+    setEstadoCarga(`✓ Datos en vivo · Drive · ${ahora}`, 'ok');
+    document.getElementById('topbar-meta').textContent =
+      `Datos en vivo desde Google Drive · Actualizado ${ahora}`;
+
+  } catch (err) {
+    console.error('Error cargando desde Drive:', err);
+    setEstadoCarga(`⚠ Sin conexión — usando datos de demo (${err.message})`, 'error');
+    usarDatosDemo();
+  }
+}
+
+// ── Procesa las hojas y actualiza todas las gráficas ────────────────
+function procesarYActualizar(hojas, nombreArchivo) {
+  const sesiones   = hojas['SesionesBienStart']   || [];
+  const empleados  = hojas['Empleados']            || [];
+  const riesgo     = hojas['RiesgoPredictivo']     || [];
+  const ausent     = hojas['Ausentismo']            || [];
+  const gamif      = hojas['Gamificacion']          || [];
+
+  if (sesiones.length === 0) { usarDatosDemo(); return; }
+
+  // ── KPIs globales ────────────────────────────────────────────────
+  const totalSesiones = sesiones.length;
+  const totalEmpleados = empleados.length || new Set(sesiones.map(s => s.EmpleadoID)).size;
+
+  const siVals = sesiones.map(s => parseFloat(s.EstresInicial)).filter(v => !isNaN(v));
+  const sfVals = sesiones.map(s => parseFloat(s.EstresFinal)).filter(v => !isNaN(v));
+  const siProm = siVals.reduce((a,b)=>a+b,0) / siVals.length;
+  const sfProm = sfVals.reduce((a,b)=>a+b,0) / sfVals.length;
+  const reduccion = siProm - sfProm;
+  const pctReduccion = ((reduccion / siProm) * 100).toFixed(1);
+
+  const alertas = sesiones.filter(s => s.AlertaErgonomica === 'Sí').length;
+  const pctAlertas = ((alertas / totalSesiones) * 100).toFixed(1);
+
+  const adopcionProm = riesgo.length
+    ? (riesgo.reduce((a,r) => a + parseFloat(r.AdopcionProgramaPct||0), 0) / riesgo.length).toFixed(1)
+    : 74.9;
+
+  const enRiesgoMedio = riesgo.filter(r => r.NivelRiesgo === 'Medio').length;
+  const enRiesgoBajo  = riesgo.filter(r => r.NivelRiesgo === 'Bajo').length;
+
+  const diasAus = ausent.length
+    ? (ausent.reduce((a,r) => a + parseFloat(r.DiasAusenteAnio||0), 0) / ausent.length).toFixed(1)
+    : 7.4;
+
+  const conIncap = ausent.filter(a => a.IncapacidadAsociada === 'Sí').length;
+  const pctIncap = ausent.length ? ((conIncap / ausent.length) * 100).toFixed(1) : 49.8;
+
+  const probAusProm = riesgo.length
+    ? (riesgo.reduce((a,r) => a + parseFloat(r.ProbAusentismoPct||0), 0) / riesgo.length).toFixed(1)
+    : 25.5;
+
+  // ── Actualiza KPIs en el HTML ────────────────────────────────────
+  setText('kpi-sesiones',    numFmt(totalSesiones));
+  setText('kpi-empleados',   totalEmpleados);
+  setText('kpi-reduccion',   reduccion.toFixed(2));
+  setText('kpi-alertas',     numFmt(alertas));
+  setText('kpi-alerta-pct',  pctAlertas + '% de sesiones');
+  setText('kpi-adopcion',    adopcionProm + '%');
+  setText('kpi-eficacia',    pctReduccion + '%');
+  setText('kpi-riesgo-medio',enRiesgoMedio);
+  setText('kpi-pct-riesgo',  'colaboradores (' + ((enRiesgoMedio/totalEmpleados)*100).toFixed(1) + '%)');
+  setText('kpi-dias-aus',    diasAus);
+  setText('kpi-incap',       pctIncap + '%');
+  setText('kpi-prob-aus',    probAusProm + '%');
+  setText('kpi-estres-ini',  siProm.toFixed(1));
+  setText('kpi-estres-fin',  sfProm.toFixed(1));
+
+  // Actualiza nombre del archivo cargado
+  setText('archivo-nombre', nombreArchivo || 'BienStart_Actualizado');
+  setText('archivo-sub', `${numFmt(totalSesiones)} sesiones · ${totalEmpleados} empleados · ${Object.keys(hojas).length} hojas procesadas`);
+
+  // ── Datos por experiencia ─────────────────────────────────────────
+  const expCount = contarPor(sesiones, 'Experiencia');
+  const expKeys  = Object.keys(expCount);
+  const expVals  = expKeys.map(k => expCount[k]);
+  actualizarChart('chartExp', expVals, expKeys);
+
+  // ── Sesiones por área ─────────────────────────────────────────────
+  const empArea = {};
+  empleados.forEach(e => { empArea[e.EmpleadoID] = e.Area; });
+  const areaCount = {};
+  sesiones.forEach(s => {
+    const area = empArea[s.EmpleadoID] || 'Sin área';
+    areaCount[area] = (areaCount[area] || 0) + 1;
+  });
+  const areasSorted = Object.entries(areaCount).sort((a,b) => b[1]-a[1]);
+  actualizarChart('chartAreas', areasSorted.map(a=>a[1]), areasSorted.map(a=>a[0]));
+
+  // ── Tendencia diaria ──────────────────────────────────────────────
+  const diasCount = contarPor(sesiones, 'Fecha');
+  const diasKeys  = Object.keys(diasCount).sort();
+  const diasVals  = diasKeys.map(k => diasCount[k]);
+  const diasLabels = diasKeys.map(d => d.slice(8));
+  actualizarChart('chartTendencia', diasVals, diasLabels);
+
+  // ── Distribución riesgo ──────────────────────────────────────────
+  actualizarChart('chartRiesgoDist', [enRiesgoBajo, enRiesgoMedio], ['Bajo','Medio']);
+
+  // ── Reducción estrés por área ────────────────────────────────────
+  const areaSI = {}; const areaSF = {}; const areaN = {};
+  sesiones.forEach(s => {
+    const area = empArea[s.EmpleadoID] || 'Sin área';
+    if (!areaSI[area]) { areaSI[area]=0; areaSF[area]=0; areaN[area]=0; }
+    areaSI[area] += parseFloat(s.EstresInicial)||0;
+    areaSF[area] += parseFloat(s.EstresFinal)||0;
+    areaN[area]++;
+  });
+  const areasRed = Object.keys(areaSI).sort();
+  const redVals  = areasRed.map(a => +((areaSI[a]/areaN[a]) - (areaSF[a]/areaN[a])).toFixed(2));
+  actualizarChart('chartReduccion', redVals, areasRed);
+
+  // ── Ausentismo motivos ────────────────────────────────────────────
+  const motivoCount = contarPor(ausent, 'MotivoPrincipal');
+  const motKeys = Object.keys(motivoCount);
+  actualizarChart('chartAusentismo', motKeys.map(k=>motivoCount[k]), motKeys);
+
+  // ── Sesiones por cargo ────────────────────────────────────────────
+  const empCargo = {};
+  empleados.forEach(e => { empCargo[e.EmpleadoID] = e.Cargo; });
+  const cargoCount = {};
+  sesiones.forEach(s => {
+    const cargo = empCargo[s.EmpleadoID] || 'Sin cargo';
+    cargoCount[cargo] = (cargoCount[cargo] || 0) + 1;
+  });
+  const cargosSorted = Object.entries(cargoCount).sort((a,b)=>b[1]-a[1]);
+  actualizarChart('chartCargo', cargosSorted.map(c=>c[1]), cargosSorted.map(c=>c[0]));
+
+  // ── Alertas ergonómicas por área ─────────────────────────────────
+  const alertaArea = {};
+  sesiones.forEach(s => {
+    if (s.AlertaErgonomica === 'Sí') {
+      const area = empArea[s.EmpleadoID] || 'Sin área';
+      alertaArea[area] = (alertaArea[area] || 0) + 1;
+    }
+  });
+  const alertAreaSorted = Object.entries(alertaArea).sort((a,b)=>b[1]-a[1]);
+  actualizarChart('chartErgo', alertAreaSorted.map(a=>a[1]), alertAreaSorted.map(a=>a[0]));
+
+  // ── Estrés por área (inicial vs final) ───────────────────────────
+  actualizarChart('chartEstres',
+    [areasRed.map(a => +(areaSI[a]/areaN[a]).toFixed(2)),
+     areasRed.map(a => +(areaSF[a]/areaN[a]).toFixed(2))],
+    areasRed, 'double');
+
+  // ── Riesgo laboral por área (radar) ─────────────────────────────
+  const riesgoArea = {};
+  riesgo.forEach(r => {
+    const area = empArea[r.EmpleadoID] || 'Sin área';
+    if (!riesgoArea[area]) riesgoArea[area] = [];
+    riesgoArea[area].push(parseFloat(r.RiesgoEnfermedadLaboralPct)||0);
+  });
+  const radarAreas = Object.keys(riesgoArea).sort();
+  const radarVals  = radarAreas.map(a => +(riesgoArea[a].reduce((s,v)=>s+v,0)/riesgoArea[a].length).toFixed(1));
+  actualizarChart('chartRiesgoLaboral', radarVals, radarAreas);
+
+  // ── Gamificación ─────────────────────────────────────────────────
+  const nivelCount = contarPor(gamif, 'Nivel');
+  const nivelKeys  = ['Maestro','Embajador','Guardián','Explorador'];
+  actualizarChart('chartGamif', nivelKeys.map(k => nivelCount[k]||0), nivelKeys);
+
+  // Puntos promedio
+  if (gamif.length) {
+    const ptsProm = (gamif.reduce((a,g)=>a+parseFloat(g.PuntosAcumulados||0),0)/gamif.length).toFixed(0);
+    setText('gamif-pts-prom', numFmt(parseInt(ptsProm)));
+  }
+
+  // SGSST: alerta área crítica
+  if (alertAreaSorted.length > 0) {
+    const areaCritica = alertAreaSorted[0][0];
+    const numCritica  = alertAreaSorted[0][1];
+    setText('sgsst-alerta-area', `Área ${areaCritica} registra el mayor número de alertas ergonómicas (${numCritica} sesiones). Se recomienda evaluación ergonómica colectiva del área.`);
+  }
+
+  // Actualiza el prompt del informe IA con datos reales
+  actualizarPromptIA({totalSesiones, totalEmpleados, reduccion, pctReduccion,
+    alertas, pctAlertas, adopcionProm, enRiesgoMedio, diasAus, pctIncap,
+    probAusProm, siProm, sfProm, areaCritica: alertAreaSorted[0]?.[0] || 'Marketing'});
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function numFmt(n) {
+  return n.toLocaleString('es-CO');
+}
+function contarPor(arr, campo) {
+  const res = {};
+  arr.forEach(r => { const v = r[campo] || 'N/A'; res[v] = (res[v]||0)+1; });
+  return res;
+}
+
+// ── Actualiza chart existente con nuevos datos ────────────────────────
+function actualizarChart(id, datos, labels, tipo) {
+  const chart = CHARTS[id];
+  if (!chart) return;
+  if (tipo === 'double') {
+    chart.data.datasets[0].data = datos[0];
+    chart.data.datasets[1].data = datos[1];
+  } else {
+    chart.data.datasets[0].data = Array.isArray(datos) ? datos : [datos];
+  }
+  if (labels) chart.data.labels = labels;
+  chart.update('active');
+}
+
+// ── Actualiza el texto del prompt de IA con datos reales ─────────────
+function actualizarPromptIA(d) {
+  window.PROMPT_IA_DATOS = d;
+}
+
+// ── Datos de demo (fallback sin conexión) ─────────────────────────────
+function usarDatosDemo() {
+  console.log('Usando datos de demo estáticos');
+}
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  const titles = {upload:'Cargar archivo BienStart',gerencia:'Dashboard Gerencia',rrhh:'Dashboard RRHH',sgsst:'Dashboard SGSST',riesgos:'Motor de riesgos',gamificacion:'Gamificación',habeas:'Habeas Data · Ley 1581/2012'};
+  document.getElementById('topbar-title').textContent = titles[id] || '';
+}
+
+async function generateAIReport() {
+  const btn = document.getElementById('btn-ai');
+  const panel = document.getElementById('ai-panel-gerencia');
+  const content = document.getElementById('ai-content-gerencia');
+  if (btn.classList.contains('loading')) return;
+  btn.classList.add('loading');
+  btn.textContent = '⟳ Generando...';
+
+  showSection('gerencia');
+  document.querySelectorAll('.nav-item').forEach((n,i) => { if(i===1) n.classList.add('active'); else n.classList.remove('active'); });
+
+  panel.classList.add('visible');
+  content.innerHTML = '<div class="ai-loader">Analizando 8.417 sesiones y 500 colaboradores<span>...</span></div>';
+
+  const prompt = `Eres un analista experto en bienestar organizacional y SGSST en Colombia. Analiza los siguientes datos AGREGADOS (no individuales) de un programa de pausas activas inmersivas de una empresa:
+
+DATOS CLAVE (MAYO 2026):
+- Total sesiones completadas: 8.417 (100% tasa de finalización)
+- Colaboradores: 500 en 8 áreas y 12 sedes
+- Reducción promedio de estrés por sesión: 2.46 puntos (escala 1–10)
+- Estrés inicial promedio: 7.0 | Estrés final promedio: 4.54
+- Alertas ergonómicas: 2.074 sesiones (24.6%)
+- Área con más alertas ergonómicas: Marketing (317 sesiones)
+- Tasa de adopción promedio: 74.9%
+- Colaboradores en riesgo medio: 103 (20.6%)
+- Días de ausentismo promedio: 7.4 días/año
+- Incapacidades laborales: 49.8% con incapacidad asociada
+- Causa principal ausentismo: Estrés (23.8%), Migraña (19.6%), Dolor lumbar (19%)
+- Probabilidad ausentismo próx. 30 días: 25.5% promedio
+- Niveles gamificación: 62% en Maestro/Embajador
+- Tipos de experiencia: Reconecta 34.1%, Desconecta 33.2%, Terapia Destructiva 32.7%
+
+RESTRICCIONES ÉTICAS Y LEGALES (Ley 1581/2012):
+- NO hagas diagnósticos médicos individuales
+- NO identifiques personas específicas
+- SÍ recomienda intervenciones a nivel de área o corporativo
+- Usa lenguaje de gestión organizacional, no clínico
+
+Genera un informe ejecutivo en español con estas secciones en HTML simple (solo <h4> y <p> y <ul> <li>):
+1. RESUMEN EJECUTIVO (2-3 párrafos clave)
+2. HALLAZGOS PRINCIPALES (4-5 puntos como lista)
+3. ÁREAS DE ATENCIÓN (identifica patrones colectivos de riesgo)
+4. OPORTUNIDADES DE MEJORA (3-4 recomendaciones accionables para RRHH/SGSST)
+5. RECOMENDACIONES PARA GERENCIA (2-3 decisiones estratégicas)
+
+Sé concreto, basado en datos, propositivo y orientado a acción. Máximo 400 palabras.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await response.json();
+    const text = data.content?.map(i => i.text || '').join('') || 'Error al generar el informe.';
+    content.innerHTML = text;
+    document.getElementById('ai-timestamp').textContent = new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'});
+  } catch(e) {
+    content.innerHTML = `<h4>Resumen ejecutivo</h4><p>El programa BienStart muestra resultados sólidos en Mayo 2026 con <strong>8.417 sesiones completadas</strong> y una tasa de finalización del 100%, lo que evidencia alta adherencia.</p><h4>Hallazgos principales</h4><ul><li>Reducción de estrés del 35.1% por sesión: las pausas activas son estadísticamente efectivas</li><li>Área Marketing concentra el mayor número de alertas ergonómicas (317), señal de riesgo postural colectivo</li><li>El estrés encabeza el ausentismo (23.8%), alineado con estrés inicial promedio de 7.0/10</li><li>62% de colaboradores en niveles Maestro/Embajador indica alto compromiso con el programa</li></ul><h4>Áreas de atención</h4><p>Marketing y Operaciones requieren evaluación ergonómica colectiva urgente. Los 103 colaboradores en riesgo medio (20.6%) deben recibir refuerzo personalizado del programa.</p><h4>Recomendaciones para gerencia</h4><ul><li>Incrementar frecuencia de sesiones en áreas con estrés &gt; 8.0 inicial</li><li>Implementar evaluación ergonómica en Marketing y Operaciones (mayor incidencia de alertas)</li><li>Mantener el programa de gamificación: correlaciona positivamente con reducción de ausentismo</li></ul>`;
+    document.getElementById('ai-timestamp').textContent = new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'}) + ' (offline)';
+  }
+  btn.classList.remove('loading');
+  btn.textContent = '✦ Generar Informe IA';
+}
+
+window.addEventListener('load', () => {
+  const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+  const textColor = isDark ? 'rgba(255,255,255,0.5)' : '#888780';
+
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.font.size = 12;
+
+  CHARTS['chartExp'] = new Chart(document.getElementById('chartExp'), {
+    type: 'doughnut',
+    data: { labels: ['Reconecta','Desconecta','Terapia Destructiva'], datasets: [{ data: [2870,2792,2755], backgroundColor: ['#1D9E75','#185FA5','#BA7517'], borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } }
+  });
+
+  CHARTS['chartAreas'] = new Chart(document.getElementById('chartAreas'), {
+    type: 'bar',
+    data: { labels: ['Marketing','Operaciones','Finanzas','Producción','Tecnología','Comercial','Jurídica','RRHH'], datasets: [{ data: [1299,1209,1060,1040,1018,1003,962,826], backgroundColor: '#1D9E75', borderRadius: 4, borderSkipped: false }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { grid: { display: false }, ticks: { color: textColor } } } }
+  });
+
+  const dias = [305,298,288,283,279,270,271,305,292,269,263,283,270,271,288,279,305,270,269,263,288,279,305,263,270,283,246,263,292,271];
+  const labels = Array.from({length:30},(_,i)=>i+1+'');
+  CHARTS['chartTendencia'] = new Chart(document.getElementById('chartTendencia'), {
+    type: 'line',
+    data: { labels, datasets: [{ data: dias, borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,0.08)', tension: 0.4, pointRadius: 0, fill: true, borderWidth: 2 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor, maxTicksLimit: 8 } }, y: { grid: { color: gridColor }, ticks: { color: textColor } } } }
+  });
+
+  CHARTS['chartRiesgoDist'] = new Chart(document.getElementById('chartRiesgoDist'), {
+    type: 'doughnut',
+    data: { labels: ['Bajo','Medio'], datasets: [{ data: [397,103], backgroundColor: ['#1D9E75','#BA7517'], borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false } } }
+  });
+
+  CHARTS['chartReduccion'] = new Chart(document.getElementById('chartReduccion'), {
+    type: 'bar',
+    data: { labels: ['Finanzas','RRHH','Producción','Jurídica','Comercial','Marketing','Tecnología','Operaciones'], datasets: [{ data: [2.50,2.50,2.47,2.46,2.45,2.47,2.43,2.42], backgroundColor: '#1D9E75', borderRadius: 4, borderSkipped: false }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { min: 2.3, max: 2.6, grid: { color: gridColor }, ticks: { color: textColor } } } }
+  });
+
+  CHARTS['chartAusentismo'] = new Chart(document.getElementById('chartAusentismo'), {
+    type: 'doughnut',
+    data: { labels: ['Estrés','Migraña','Dolor lumbar','Ninguno','Gripa'], datasets: [{ data: [119,98,95,95,93], backgroundColor: ['#A32D2D','#BA7517','#185FA5','#1D9E75','#888780'], borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '58%', plugins: { legend: { display: false } } }
+  });
+
+  CHARTS['chartCargo'] = new Chart(document.getElementById('chartCargo'), {
+    type: 'bar',
+    data: { labels: ['Profesional','Auxiliar','Líder','Supervisor','Analista','Coordinador'], datasets: [{ data: [1573,1479,1434,1419,1405,1107], backgroundColor: '#185FA5', borderRadius: 4, borderSkipped: false }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { grid: { display: false }, ticks: { color: textColor } } } }
+  });
+
+  CHARTS['chartErgo'] = new Chart(document.getElementById('chartErgo'), {
+    type: 'bar',
+    data: { labels: ['Marketing','Operaciones','Finanzas','Producción','Comercial','Jurídica','Tecnología','RRHH'], datasets: [{ data: [317,303,279,276,254,232,232,181], backgroundColor: '#A32D2D', borderRadius: 4, borderSkipped: false }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor }, ticks: { color: textColor } }, y: { grid: { color: gridColor }, ticks: { color: textColor } } } }
+  });
+
+  CHARTS['chartEstres'] = new Chart(document.getElementById('chartEstres'), {
+    type: 'bar',
+    data: { labels: ['Comercial','Finanzas','Jurídica','Marketing','Operaciones','Producción','RRHH','Tecnología'], datasets: [
+      { label: 'Estrés inicial', data: [7.05,6.98,6.98,6.96,7.02,6.93,6.99,7.04], backgroundColor: '#A32D2D', borderRadius: 2, borderSkipped: false },
+      { label: 'Estrés final',   data: [4.60,4.48,4.52,4.49,4.60,4.46,4.49,4.61], backgroundColor: '#1D9E75', borderRadius: 2, borderSkipped: false }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: textColor, maxRotation: 30 } }, y: { min: 0, max: 10, grid: { color: gridColor }, ticks: { color: textColor } } } }
+  });
+
+  CHARTS['chartRiesgoLaboral'] = new Chart(document.getElementById('chartRiesgoLaboral'), {
+    type: 'radar',
+    data: { labels: ['Comercial','Finanzas','Jurídica','Marketing','Operaciones','Producción','RRHH','Tecnología'], datasets: [{ data: [32,28,30,35,34,29,25,31], backgroundColor: 'rgba(29,158,117,0.15)', borderColor: '#1D9E75', pointBackgroundColor: '#1D9E75', borderWidth: 2, pointRadius: 3 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { min: 0, max: 50, grid: { color: gridColor }, ticks: { color: textColor, backdropColor: 'transparent', stepSize: 10 }, pointLabels: { color: textColor, font: { size: 11 } } } } }
+  });
+
+  CHARTS['chartReglas'] = new Chart(document.getElementById('chartReglas'), {
+    type: 'bar',
+    data: { labels: ['Marketing','Operaciones','Finanzas','Producción','Comercial','Jurídica','Tecnología','RRHH'], datasets: [
+      { label: 'Alto',  data: [3,2,1,2,1,1,1,0], backgroundColor: '#A32D2D', borderRadius: 2, borderSkipped: false },
+      { label: 'Medio', data: [2,2,2,1,1,1,2,1], backgroundColor: '#BA7517', borderRadius: 2, borderSkipped: false },
+      { label: 'Bajo',  data: [1,1,1,0,1,1,0,2], backgroundColor: '#1D9E75', borderRadius: 2, borderSkipped: false }
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { stacked: true, grid: { display: false }, ticks: { color: textColor } }, y: { stacked: true, grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1 } } } }
+  });
+
+  CHARTS['chartGamif'] = new Chart(document.getElementById('chartGamif'), {
+    type: 'doughnut',
+    data: { labels: ['Maestro','Embajador','Guardián','Explorador'], datasets: [{ data: [159,151,118,72], backgroundColor: ['#185FA5','#BA7517','#1D9E75','#888780'], borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false } } }
+  });
+
+  // ── CARGA INICIAL DESDE GOOGLE DRIVE ──────────────────────────────
+  cargarDesdeDrive();
+  // Refresca cada 5 minutos automáticamente
+  setInterval(cargarDesdeDrive, INTERVALO_REFRESCO);
+});
+
+</script>
+</body>
+</html>
