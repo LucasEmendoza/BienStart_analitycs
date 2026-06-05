@@ -704,6 +704,38 @@ function setEstadoCarga(msg, tipo) {
 }
 
 // ── Carga datos desde Drive ──────────────────────────────────────────
+// ── Normaliza nombres de hojas ── acepta cualquier estructura ────────
+function normalizarHojas(hojas) {
+  const claves = Object.keys(hojas);
+
+  // Si ya tiene las hojas estándar, devuelve tal cual
+  if (hojas['SesionesBienStart']) return hojas;
+
+  // Mapeo flexible: busca la hoja más grande como sesiones
+  const resultado = {};
+
+  // La hoja con más registros = sesiones
+  let maxLen = 0;
+  let hojaSesiones = null;
+  claves.forEach(k => {
+    const arr = Array.isArray(hojas[k]) ? hojas[k] : [];
+    if (arr.length > maxLen) { maxLen = arr.length; hojaSesiones = k; }
+  });
+
+  if (hojaSesiones) {
+    resultado['SesionesBienStart'] = hojas[hojaSesiones];
+    console.log('Hoja de sesiones detectada:', hojaSesiones, '→', maxLen, 'registros');
+    console.log('Muestra del primer registro:', JSON.stringify(hojas[hojaSesiones][0]));
+  }
+
+  // Copia el resto con sus nombres originales
+  claves.forEach(k => {
+    if (k !== hojaSesiones) resultado[k] = hojas[k];
+  });
+
+  return resultado;
+}
+
 async function cargarDesdeDrive() {
   setEstadoCarga('⟳ Actualizando desde Drive...', 'loading');
   try {
@@ -711,15 +743,18 @@ async function cargarDesdeDrive() {
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || 'Error desconocido');
 
-    // Busca el primer archivo que tenga las hojas esperadas
+    // Toma el primer archivo disponible en Drive
     const archivos = json.data;
     const nombreArchivo = Object.keys(archivos)[0];
     const hojas = archivos[nombreArchivo];
 
     if (!hojas) throw new Error('No se encontraron archivos en la carpeta de Drive');
 
-    DATOS_ACTUALES = hojas;
-    procesarYActualizar(hojas, nombreArchivo);
+    // Normaliza los nombres de hoja — mapea cualquier nombre a los esperados
+    const hojasNormalizadas = normalizarHojas(hojas);
+
+    DATOS_ACTUALES = hojasNormalizadas;
+    procesarYActualizar(hojasNormalizadas, nombreArchivo);
 
     const ahora = new Date().toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'});
     setEstadoCarga(`✓ Datos en vivo · Drive · ${ahora}`, 'ok');
